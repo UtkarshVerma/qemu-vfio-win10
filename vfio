@@ -1,0 +1,58 @@
+#!/bin/bash
+
+queryDevice() {
+	dev=0000:$dev
+	if [ ! -d /sys/bus/pci/devices/$dev ]; then
+		echo "ERROR: Device $dev does not exist!"
+		return 1
+	fi
+
+	vendor=$(cat /sys/bus/pci/devices/$dev/vendor)
+	device=$(cat /sys/bus/pci/devices/$dev/device)
+	
+	return 0
+}
+
+logExitStatus() {
+	[ $? -eq 0 ] && echo "Success" || echo "Failed"
+}
+
+bind() {
+	modprobe vfio-pci
+
+	for dev in $@; do
+		queryDevice
+		[ $? -ne 0 ] && continue
+
+		# Unbind PCI device $dev, if bound to a driver
+		driverDir=/sys/bus/pci/devices/$dev/driver
+		if [ -e $driverDir ]; then
+			driver=$(basename $(readlink $driverDir))
+			echo -n "Unbinding $dev from $driver..."
+			echo $dev > $driverDir/unbind
+			logExitStatus
+		fi
+		
+		echo -n "Binding $dev to vfio-pci..."
+		echo $vendor $device > /sys/bus/pci/drivers/vfio-pci/new_id
+		logExitStatus
+	done
+}
+
+unbind() {
+	for dev in $@; do
+		queryDevice
+		[ $? -ne 0 ] && continue
+		
+		echo -n "Unbinding $dev from vfio-pci..."
+		echo $vendor $device > /sys/bus/pci/drivers/vfio-pci/remove_id
+		logExitStatus
+	done
+
+	rmmod vfio-pci vfio-virqfd vfio-iommu-type1 vfio
+}
+
+case $1 in
+	"bind") bind ${@:2} ;;
+	"unbind") unbind ${@:2} ;;
+esac
