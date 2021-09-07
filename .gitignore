@@ -1,2 +1,4 @@
+OVMF_CODE.fd
+OVMF_VARS.fd
 hdd.qcow2
 virtio.iso

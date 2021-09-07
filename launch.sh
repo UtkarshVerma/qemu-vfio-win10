@@ -6,6 +6,7 @@ CORES=3
 THREADS=2
 GPU=01:00.0
 GPU_AUDIO=01:00.1
+SHARED_FOLDER=/media/stuff
 
 # Parse CLI flags
 USE_SPICE=0
@@ -64,7 +65,7 @@ if [ $USE_SPICE -eq 1 ]; then
 		-device virtserialport,chardev=vdagent,name=com.redhat.spice.0"
 else
 	# Use evdev with persistent-evdev.py
-	persistent-evdev.py ~/.config/persistent-evdev/config.json &
+	./persistent-evdev.py persistent-evdev.json &
 	sleep 1
 
 	args="$args \
@@ -116,13 +117,13 @@ qemu-system-x86_64 \
 	-no-hpet \
 	-msg timestamp=on \
 	-acpitable file=SSDT1.dat \
-	-drive file=/usr/share/edk2-ovmf/OVMF_CODE.fd,readonly=on,format=raw,if=pflash \
+	-drive file=OVMF_CODE.fd,readonly=on,format=raw,if=pflash \
 	-drive file=OVMF_VARS.fd,format=raw,if=pflash \
 	-object iothread,id=diskio \
 	-device virtio-scsi-pci,iothread=diskio,id=scsi,num_queues=$((CORES*THREADS)) \
 	-device scsi-hd,drive=hdd \
 	-drive file=hdd.qcow2,id=hdd,if=none \
-	-netdev user,id=nic,smb=/media/stuff \
+	-netdev user,id=nic,smb=$SHARED_FOLDER \
 	-device virtio-net,netdev=nic \
 	-audiodev pa,id=hda,server=unix:/run/user/1000/pulse/native \
 	-device ich9-intel-hda,bus=pcie.0,addr=0x1b,msi=on \
@@ -152,7 +153,7 @@ qemuPID=$!
 total=$(nproc)
 offset=$((total-CORES*THREADS))
 extraCores=$((offset-2))-$((offset-1))
-qemu-affinity $qemuPID -v \
+./qemu-affinity $qemuPID -v \
 	-p $extraCores \
 	-q $extraCores \
 	-i *:$extraCores \

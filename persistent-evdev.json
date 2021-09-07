@@ -1,0 +1,9 @@
+{
+	"cache": "~/.cache/persistent-evdev",
+	"devices": {
+		"persist-mouse": "/dev/input/by-id/usb-PixArt_Dell_MS116_USB_Optical_Mouse-event-mouse",
+		"persist-touchpad": "/dev/input/by-path/platform-AMDI0010:01-event-mouse",
+		"persist-keyboard0": "/dev/input/by-path/platform-i8042-serio-0-event-kbd",
+		"persist-keyboard1": "/dev/input/by-id/usb-SINO_WEALTH_Gaming_KB-event-kbd"
+    }
+}
