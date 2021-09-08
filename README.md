@@ -24,7 +24,23 @@ This script assumes you already have a working Windows 10 guest set up for Looki
 - [GPU passthrough with libvirt qemu kvm](https://wiki.gentoo.org/wiki/GPU_passthrough_with_libvirt_qemu_kvm)
 - [Looking Glass Docs](https://looking-glass.io/docs/stable/install/)
 
-Once you have a working Windows 10 guest, move the disk image file to this folder and rename it to `hdd.qcow2`. After that copy the OVMF file descriptors `OVMF_CODE.fd` and `OVMF_VARS.fd` next to the script as well.
+Once you have a working Windows 10 guest, move the disk image file to this folder and rename it to `hdd.qcow2`. After that copy the OVMF file descriptors `OVMF_CODE.fd` and `OVMF_VARS.fd` next to the script as well so that you get the following tree:
+```
+.
+├── LICENSE
+├── OVMF_CODE.fd
+├── OVMF_VARS.fd
+├── README.md
+├── SSDT1.dat
+├── hdd.qcow2
+├── launch.sh
+├── persistent-evdev.json
+├── persistent-evdev.py
+├── qemu-affinity
+└── vfio
+
+0 directories, 11 files
+```
 
 You'll also need to configure a few variables in the script according to your machine.
 
@@ -38,7 +54,13 @@ GPU_AUDIO=01:00.1               # PCI address of your NVIDIA GPU's audio functio
 SHARED_FOLDER=/media/stuff      # Folder to be shared to guest
 ```
 
-Once that is out of the way, make sure you have `jemalloc` installed on your machine, and `persistent-evdev.py` configured if you plan on using `evdev` passthrough.
+Once that is out of the way, make sure you have `jemalloc` installed on your machine, and `persistent-evdev.py` configured through `persistent-evdev.json` if you plan on using `evdev` passthrough. Also make sure you have installed the `qemu-affinity` python package.
+
+```sh
+pip install qemu-affinity
+```
+
+Once that's done, run the launch script as root, and you're good to go.
 
 ```sh
 sudo ./launch.sh
