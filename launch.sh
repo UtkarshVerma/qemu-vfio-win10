@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Ensure that the script is always run as root
+if [ $(id -u) -ne 0 ]; then
+	echo "$0 needs to be run as root!"
+	exec sudo $0 $@
+fi
+
 USER=subaru
 RAM=5
 CORES=3
@@ -66,6 +72,7 @@ if [ $USE_SPICE -eq 1 ]; then
 else
 	# Use evdev with persistent-evdev.py
 	./persistent-evdev.py persistent-evdev.json &
+	pEvdevPID=$!
 	sleep 1
 
 	args="$args \
@@ -175,8 +182,8 @@ echo
 
 # Kill looking-glass-client, and persistent-evdev after VM shuts down
 if [ $USE_SPICE -ne 1 ]; then
-	killall looking-glass-client
-	killall persistent-evdev.py
+	kill $(pidof looking-glass-client)
+	kill $pEvdevPID
 fi
 
 # Clean up hugepages
@@ -191,4 +198,3 @@ modprobe nvidia-drm nvidia-modeset nvidia
 
 # Remove kvmfr kernel module
 [ $USE_DMABUF -eq 1 ] && rmmod kvmfr
-
