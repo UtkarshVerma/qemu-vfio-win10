@@ -18,7 +18,6 @@ SHARED_FOLDER=/media/stuff
 USE_SPICE=0
 USE_HUGEPAGES=0
 USE_DMABUF=1;
-WEBCAM=0;
 while [ $# -gt 0 ]; do
   case $1 in
 	-w|--webcam) WEBCAM=1; shift ;;
