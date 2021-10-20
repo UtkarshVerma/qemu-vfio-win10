@@ -8,7 +8,7 @@ fi
 
 USER=subaru
 RAM=5
-CORES=3
+CORES=2
 THREADS=2
 GPU=01:00.0
 GPU_AUDIO=01:00.1
@@ -67,7 +67,7 @@ if [ $USE_SPICE -eq 1 ]; then
 	args="$args \
 		-device virtio-serial-pci \
 		-spice port=$spicePort,disable-ticketing=on \
-		-chardev spicevmc,id=vdagent,name=vdagent \
+		-chardev spicevmc,name=vdagent,id=vdagent \
 		-device virtserialport,chardev=vdagent,name=com.redhat.spice.0"
 else
 	# Use evdev with persistent-evdev.py
@@ -109,7 +109,7 @@ args="$args \
 setCPUGovernor performance
 
 # QEMU
-schedtool -n -5 -e \
+nice -n -5 \
 jemalloc.sh \
 qemu-system-x86_64 \
 	-enable-kvm \
