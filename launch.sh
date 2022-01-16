@@ -7,7 +7,7 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 USER=subaru
-RAM=5
+RAM=4
 CORES=2
 THREADS=2
 GPU=01:00.0
@@ -30,26 +30,10 @@ while [ $# -gt 0 ]; do
 done
 
 lgArgs="$lgArgs -S"
-setCPUGovernor() {
-	cpuCount=0
-	for core in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-		echo $1 > $core
-		echo "CPU $cpuCount governor: $1"
-		cpuCount=$((cpuCount+1))
-	done
-}
 
-
-# Pass through NVIDIA GPU Audio device only if DT3 power management is inactive
-if [ ! -d /sys/bus/pci/devices/0000:$GPU_AUDIO ]; then
-	NVIDIA_RTD3=1
-	echo 1 > /sys/bus/pci/rescan
-fi
-
-./vfio bind $GPU $GPU_AUDIO
-rmmod nvidia-drm nvidia-modeset nvidia
-
-echo
+# Bind GPU to guest
+gfxMode="$(supergfxctl -g | awk '{print $NF}')"
+supergfxctl -m vfio
 
 # Allocate memory hugepages
 if [ $USE_HUGEPAGES -ne 0 ]; then
@@ -114,8 +98,19 @@ args="$args \
 	-device ivshmem-plain,id=shmem0,memdev=looking-glass,bus=pcie.0 \
 	-object memory-backend-file,id=looking-glass,mem-path=$shmFile,size=${shmSize}M,share=yes"
 
-# Switch to performance governor
-setCPUGovernor performance
+# Switch to performance mode
+laptopMode="$(asusctl profile -p | awk '{print $NF}')"
+asusctl profile -P Performance
+
+# Setup Jack with PipeWire backend
+export PIPEWIRE_RUNTIME_DIR="/run/user/1000"
+export PIPEWIRE_LATENCY="512/48000"
+inputArgs="in.client-name=Windows,in.connect-ports=Family.*capture_F[LR]"
+outputArgs="out.client-name=Windows,out.connect-ports=Family.*playback_F[LR]" 
+args="$args \
+	-audiodev jack,id=ad0,$inputArgs,$outputArgs \
+	-device ich9-intel-hda,bus=pcie.0,addr=0x1b,msi=on \
+	-device hda-duplex,audiodev=ad0"
 
 # QEMU
 nice -n -5 \
@@ -141,9 +136,6 @@ qemu-system-x86_64 \
 	-drive file=hdd.qcow2,id=hdd,if=none \
 	-netdev user,id=nic,smb=$SHARED_FOLDER \
 	-device virtio-net,netdev=nic \
-	-audiodev pa,id=hda,server=unix:/run/user/1000/pulse/native \
-	-device ich9-intel-hda,bus=pcie.0,addr=0x1b,msi=on \
-	-device hda-micro,audiodev=hda \
 	-object rng-random,id=rng,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng \
 	-device vfio-pci,host=$GPU,x-vga=on,multifunction=on \
@@ -183,8 +175,8 @@ sudo -u $USER looking-glass-client $lgArgs 1>/tmp/looking-glass.log 2>&1 &
 # Wait for QEMU to exit
 wait $qemuPID
 
-# Switch to schedutil governor
-setCPUGovernor schedutil
+# Restore initial laptop mode
+asusctl profile -P $laptopMode
 echo
 
 # Kill looking-glass-client, and persistent-evdev after VM shuts down
@@ -199,9 +191,8 @@ if [ $USE_HUGEPAGES -ne 0 ]; then
 	umount $hugepages
 fi
 
-./vfio unbind $GPU $GPU_AUDIO
-[ -z $NVIDIA_RTD3 ] || echo 1 > /sys/bus/pci/devices/0000:$GPU_AUDIO/remove
-modprobe nvidia-drm nvidia-modeset nvidia
+# Return GPU to host
+supergfxctl -m $gfxMode
 
 # Remove kvmfr kernel module
 [ $USE_DMABUF -eq 1 ] && rmmod kvmfr
