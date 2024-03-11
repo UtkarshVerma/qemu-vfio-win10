@@ -1,4 +1,4 @@
-OVMF_CODE.fd
-OVMF_VARS.fd
-hdd.qcow2
-virtio.iso
+/OVMF_CODE.fd
+/OVMF_VARS.fd
+/hdd.qcow2
+/nvidia.rom
