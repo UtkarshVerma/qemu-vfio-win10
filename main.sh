@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo "error: root access is required"
+    exit 1
+fi
+
 sigint_handler() {
     kill "$QEMU_PID"
 }
