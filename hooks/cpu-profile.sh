@@ -1,7 +1,8 @@
 #!/bin/sh
 
 set_cpu_profile() {
-    asusctl profile --profile-set "$1"
+    # Strip the unnecessary version message.
+    asusctl profile --profile-set "$1" | tail -n +2
     echo "CPU profile set to $1" >&2
 }
 

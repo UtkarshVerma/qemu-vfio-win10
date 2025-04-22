@@ -90,7 +90,7 @@ args="$args \
     -object iothread,id=diskio \
     -device virtio-scsi-pci,iothread=diskio,id=scsi,num_queues=$((CORES * THREADS)) \
     -device scsi-hd,drive=ssd,bootindex=2 \
-    -drive file=../windows-10/hdd.qcow2,id=ssd,if=none"
+    -drive file=hdd.qcow2,id=ssd,if=none"
 
 # Display
 args="$args \
